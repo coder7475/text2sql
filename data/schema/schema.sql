@@ -84,7 +84,7 @@ CREATE TABLE employee (
     extension VARCHAR(10),
     photo TEXT,
     notes TEXT,
-    reports_to INT REFERENCES employee(employee_id) ON DELETE SET NULL,
+    reports_to INT,
     photo_path TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

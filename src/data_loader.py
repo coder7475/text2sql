@@ -112,8 +112,9 @@ def save_csvs(dfs, out_dir='data/normalized'):
     out.mkdir(parents=True, exist_ok=True)
     for name, df in dfs.items():
         clean = clean_columns(df)
+        finished = handle_missing_values(clean)
         fname = out / f"{name}.csv"
-        clean.to_csv(fname, index=False)
+        finished.to_csv(fname, index=False)
     logger.info(f"Saved {len(dfs)} tables to {out}")
 
 
@@ -171,14 +172,10 @@ def get_or_create_city(cur, city_name, region_id):
     return cur.fetchone()[0]
 
 
-# =========================================================
-# Main Insert Function
-# =========================================================
 
 def load_orders(csv_path):
     df = pd.read_csv(csv_path)
-    # Handle missing values properly - replace NaN with empty strings
-    df = df.fillna('')
+    df = handle_missing_values(df)
     dsn = get_db_dsn()
 
     with psycopg2.connect(dsn) as conn:
@@ -223,6 +220,60 @@ def load_orders(csv_path):
 
 
 
+def load_generic_csv(csv_path, table_name, city_col="city", region_col="region", country_col="country", id_col=None):
+    """
+    Generic loader for CSV files into tables with optional city/region/country mapping.
+    
+    Args:
+        csv_path (str): Path to CSV file.
+        table_name (str): Target table in DB.
+        city_col (str): Column name for city in CSV.
+        region_col (str): Column name for region in CSV.
+        country_col (str): Column name for country in CSV.
+        id_col (str): Column to use for ON CONFLICT handling (primary key).
+    """
+    df = pd.read_csv(csv_path)  
+    df = handle_missing_values(df)
+    dsn = get_db_dsn()
+
+    with psycopg2.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SET search_path TO northwind;")
+
+            for _, row in df.iterrows():
+                # Step 1: Resolve city hierarchy if columns exist
+                city_id = None
+                if city_col in df.columns and country_col in df.columns:
+                    country_id = get_or_create_country(cur, row[country_col])
+                    region_id = get_or_create_region(cur, row.get(region_col, ''), country_id)
+                    city_id = get_or_create_city(cur, row[city_col], region_id)
+
+                # Step 2: Prepare columns and values
+                columns = []
+                values = []
+                for col in df.columns:
+                    if col in [city_col, region_col, country_col]:
+                        continue  # Already handled
+                    columns.append(col)
+                    values.append(row[col])
+                
+                # Include city_id if present
+                if city_id is not None:
+                    columns.append("city_id")
+                    values.append(city_id)
+
+                # Step 3: Build INSERT query
+                cols_str = ",".join(columns)
+                placeholders = ",".join(["%s"] * len(values))
+
+                query = f"INSERT INTO {table_name} ({cols_str}) VALUES ({placeholders})"
+                if id_col:
+                    query += f" ON CONFLICT ({id_col}) DO NOTHING"
+
+                cur.execute(query, values)
+        conn.commit()
+
+    print(f"Data from {csv_path} successfully loaded into {table_name}.")
 
 
 if __name__ == '__main__':
@@ -239,5 +290,14 @@ if __name__ == '__main__':
     dfs = load_excel_sheets(args.excel)
     save_csvs(dfs)
 
-    load_orders("data/normalized/Order.csv")
+    load_generic_csv(
+        csv_path="data/normalized/Employee.csv",
+        table_name="employee",
+        city_col="city",
+        region_col="region",
+        country_col="country",
+        id_col="employee_id"   # optional, used to skip duplicates
+    )
+
+    # load_orders("data/normalized/Order.csv")
     
