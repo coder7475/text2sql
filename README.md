@@ -128,3 +128,11 @@ Connected to: northwind_db
 ```
 
 You’re good to go!
+
+## Data Engineering
+
+Load the data
+
+```bash
+python3 src/data_loader.py --excel data/raw/northwind.xlsx
+```
