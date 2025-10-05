@@ -1,4 +1,4 @@
-orderid,productid,unitprice,quantity,discount
+order_id,product_id,unit_price,quantity,discount
 10248,11,21.0,12,0.0
 10248,42,14.0,10,0.0
 10248,72,34.8,5,0.0

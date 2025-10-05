@@ -30,6 +30,31 @@ def load_excel_sheets(path):
     logger.info(f"Loaded {len(dfs)} sheets from {path}")
     return dfs
 
+def to_snake_case(s):
+    """
+    Convert a string to snake_case.
+
+    This function normalizes a string by:
+    - Stripping leading/trailing whitespace
+    - Replacing spaces with underscores
+    - Converting camelCase or PascalCase to snake_case
+    - Lowercasing all characters
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The snake_case version of the input string.
+    """
+    import re
+    s = str(s).strip()
+    # Replace spaces with underscores
+    s = s.replace(' ', '_')
+    # Convert camelCase or PascalCase to snake_case
+    s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
+    s = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s)
+    return s.lower()
+    
 def clean_columns(df):
     """
     Normalize DataFrame column names by stripping whitespace, converting to lowercase,
@@ -42,7 +67,7 @@ def clean_columns(df):
         pd.DataFrame: DataFrame with cleaned column names.
     """
     df = df.copy()
-    df.columns = [str(c).strip().lower().replace(' ', '_') for c in df.columns]
+    df.columns = [to_snake_case(c) for c in df.columns]
     return df
 
 def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
