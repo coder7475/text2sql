@@ -4,6 +4,12 @@ This is a stub: adjust schema SQL path and connection details in src/config.py
 import argparse
 from pathlib import Path
 import psycopg2
+import sys
+import os
+
+# Add the parent directory to Python path to import from src
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from src.config import get_db_dsn
 
 def apply_schema(sql_path):
