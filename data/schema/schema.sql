@@ -106,7 +106,7 @@ CREATE TABLE supplier (
     postal_code VARCHAR(20),
     phone VARCHAR(30),
     fax VARCHAR(30),
-    homepage TEXT,
+    home_page TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

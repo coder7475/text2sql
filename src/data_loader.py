@@ -190,6 +190,14 @@ def load_orders(csv_path):
                 city_id = get_or_create_city(cur, row["ship_city"], region_id)
 
                 # Step 2: Insert into "order"
+                # Convert pandas/numpy types to native Python types
+                def convert_value(val):
+                    if pd.isna(val):
+                        return None
+                    elif hasattr(val, 'item'):  # NumPy scalar
+                        return val.item()
+                    return val
+                    
                 cur.execute("""
                     INSERT INTO "order" (
                         customer_id,
@@ -204,16 +212,16 @@ def load_orders(csv_path):
                         ship_postal_code
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    row["customer_id"],
-                    row["employee_id"],
-                    row["order_date"],
-                    row["required_date"],
-                    row["shipped_date"],
-                    row["ship_via"],
-                    row["freight"],
-                    row["ship_name"],
+                    convert_value(row["customer_id"]),
+                    convert_value(row["employee_id"]),
+                    convert_value(row["order_date"]),
+                    convert_value(row["required_date"]),
+                    convert_value(row["shipped_date"]),
+                    convert_value(row["ship_via"]),
+                    convert_value(row["freight"]),
+                    convert_value(row["ship_name"]),
                     city_id,
-                    row["ship_postal_code"]
+                    convert_value(row["ship_postal_code"])
                 ))
         conn.commit()
     print("Orders successfully loaded.")
@@ -255,7 +263,13 @@ def load_generic_csv(csv_path, table_name, city_col="city", region_col="region",
                     if col in [city_col, region_col, country_col]:
                         continue  # Already handled
                     columns.append(col)
-                    values.append(row[col])
+                    # Convert pandas/numpy types to native Python types
+                    value = row[col]
+                    if pd.isna(value):
+                        value = None
+                    elif hasattr(value, 'item'):  # NumPy scalar
+                        value = value.item()
+                    values.append(value)
                 
                 # Include city_id if present
                 if city_id is not None:
@@ -290,14 +304,60 @@ if __name__ == '__main__':
     dfs = load_excel_sheets(args.excel)
     save_csvs(dfs)
 
-    load_generic_csv(
-        csv_path="data/normalized/Employee.csv",
-        table_name="employee",
-        city_col="city",
-        region_col="region",
-        country_col="country",
-        id_col="employee_id"   # optional, used to skip duplicates
-    )
+    # Use a list of configs to load data for all table except Order
+    csv_configs = [
+        {
+            "csv_path": "data/normalized/Category.csv",
+            "table_name": "category",
+            "id_col": "category_id"
+        },
+        {
+            "csv_path": "data/normalized/Customer.csv",
+            "table_name": "customer",
+            "city_col": "city",
+            "region_col": "region",
+            "country_col": "country",
+            "id_col": "customer_id"
+        },
+        {
+            "csv_path": "data/normalized/Employee.csv",
+            "table_name": "employee",
+            "city_col": "city",
+            "region_col": "region",
+            "country_col": "country",
+            "id_col": "employee_id"
+        },
+        {   
+            "csv_path": "data/normalized/Supplier.csv",
+            "table_name": "supplier",
+            "city_col": "city",
+            "region_col": "region",
+            "country_col": "country",
+            "id_col": "supplier_id"
+        },
+        {
+            "csv_path": "data/normalized/Product.csv",
+            "table_name": "product",
+            "city_col": "city",
+            "region_col": "region",
+            "country_col": "country",
+            "id_col": "product_id"
+        },
+        {
+            "csv_path": "data/normalized/Shipper.csv",
+            "table_name": "shipper",
+            "id_col": "shipper_id"
+        },
+        
+    ]
 
-    # load_orders("data/normalized/Order.csv")
+    for config in csv_configs:
+        load_generic_csv(**config)
+
+    order_detail_config = [{
+            "csv_path": "data/normalized/Order Detail.csv",
+            "table_name": "order_detail",
+    }]
+    load_orders("data/normalized/Order.csv")
+    load_generic_csv(**order_detail_config)       
     
