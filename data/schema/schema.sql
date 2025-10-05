@@ -162,7 +162,7 @@ CREATE TABLE shipper (
 -- Order
 -- =========================================================
 CREATE TABLE "order" (
-    order_id SERIAL PRIMARY KEY,
+    order_id INT PRIMARY KEY,
     customer_id VARCHAR(10) REFERENCES customer(customer_id) ON DELETE SET NULL,
     employee_id INT REFERENCES employee(employee_id) ON DELETE SET NULL,
     order_date DATE,

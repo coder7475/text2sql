@@ -83,7 +83,9 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     Handle missing values in a DataFrame.
 
     Numeric columns: fill NaN with 0.
-    Non-numeric columns: fill NaN with empty string.
+    String/object columns: fill NaN with empty string.
+    Datetime columns: fill NaN with pd.Timestamp('1970-01-01').
+    Boolean columns: fill NaN with False.
 
     Args:
         df (pd.DataFrame): Input DataFrame.
@@ -95,6 +97,10 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         if pd.api.types.is_numeric_dtype(df[col]):
             df[col] = df[col].fillna(0)
+        elif pd.api.types.is_bool_dtype(df[col]):
+            df[col] = df[col].fillna(False)
+        elif pd.api.types.is_datetime64_any_dtype(df[col]):
+            df[col] = df[col].fillna(pd.Timestamp('1970-01-01'))
         else:
             df[col] = df[col].fillna('')
     return df
@@ -200,6 +206,7 @@ def load_orders(csv_path):
                     
                 cur.execute("""
                     INSERT INTO "order" (
+                        order_id,
                         customer_id,
                         employee_id,
                         order_date,
@@ -210,8 +217,9 @@ def load_orders(csv_path):
                         ship_name,
                         ship_city_id,
                         ship_postal_code
-                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
+                    convert_value(row["order_id"]),
                     convert_value(row["customer_id"]),
                     convert_value(row["employee_id"]),
                     convert_value(row["order_date"]),
@@ -298,13 +306,17 @@ if __name__ == '__main__':
         python src/data_loader.py --excel path/to/northwind.xlsx
     """
     import argparse
+    import os
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--excel', required=True, help='Path to northwind.xlsx (data/raw)')
     args = parser.parse_args()
+
+    # Load Excel sheets and save as CSVs
     dfs = load_excel_sheets(args.excel)
     save_csvs(dfs)
 
-    # Use a list of configs to load data for all table except Order
+    # List of configs for tables except Order and Order Detail
     csv_configs = [
         {
             "csv_path": "data/normalized/Category.csv",
@@ -348,16 +360,31 @@ if __name__ == '__main__':
             "table_name": "shipper",
             "id_col": "shipper_id"
         },
-        
     ]
+
+    # Make sure all required CSV files exist before loading
+    missing_files = [cfg["csv_path"] for cfg in csv_configs if not os.path.isfile(cfg["csv_path"])]
+    if missing_files:
+        raise FileNotFoundError(f"Missing required CSV files: {missing_files}")
 
     for config in csv_configs:
         load_generic_csv(**config)
 
-    order_detail_config = [{
-            "csv_path": "data/normalized/Order Detail.csv",
-            "table_name": "order_detail",
-    }]
-    load_orders("data/normalized/Order.csv")
-    load_generic_csv(**order_detail_config)       
-    
+    # Make sure Order.csv exists before loading orders
+    order_csv_path = "data/normalized/Order.csv"
+    if not os.path.isfile(order_csv_path):
+        raise FileNotFoundError(f"Missing required CSV file: {order_csv_path}")
+
+    # Load orders before order details to ensure referential integrity
+    load_orders(order_csv_path)
+
+    # Make sure Order Detail.csv exists before loading order details
+    order_detail_csv_path = "data/normalized/Order Detail.csv"
+    if not os.path.isfile(order_detail_csv_path):
+        raise FileNotFoundError(f"Missing required CSV file: {order_detail_csv_path}")
+
+    order_detail_config = {
+        "csv_path": order_detail_csv_path,
+        "table_name": "order_detail",
+    }
+    load_generic_csv(**order_detail_config)
