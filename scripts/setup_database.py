@@ -6,6 +6,7 @@ from pathlib import Path
 import psycopg2
 import sys
 import os
+import pandas as pd
 
 # Add the parent directory to Python path to import from src
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -16,7 +17,7 @@ def apply_schema(sql_path):
     """
     Apply the database schema from the given SQL file.
 
-    Args:
+    Args: 
         sql_path (str or Path): Path to the SQL schema file.
 
     This function connects to the database using the DSN from config,
@@ -30,8 +31,13 @@ def apply_schema(sql_path):
             conn.commit()
     print('Schema applied.')
 
+
 if __name__ == '__main__':
-    p = argparse.ArgumentParser()
-    p.add_argument('--schema', default='data/schema/schema.sql', help='Path to schema SQL')
-    args = p.parse_args()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--schema', default='data/schema/schema.sql', help='Path to schema SQL')
+    # parser.add_argument('--csv_dir', default='data/normalized', help='Directory of normalized CSVs')
+    
+    args = parser.parse_args()
     apply_schema(args.schema)
+    # load_data_to_db(args.csv_dir)

@@ -3,9 +3,17 @@
 - clean_columns: normalize column names
 - save_csvs: persist cleaned tables to data/normalized/
 """
+import sys
+import os
 from pathlib import Path
 import pandas as pd
 import logging
+import psycopg2
+# from psycopg2.extras import execute_values
+
+# Add the parent directory to Python path to import from src
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from src.config import get_db_dsn
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -108,6 +116,115 @@ def save_csvs(dfs, out_dir='data/normalized'):
         clean.to_csv(fname, index=False)
     logger.info(f"Saved {len(dfs)} tables to {out}")
 
+
+# # =========================================================
+# # Helper Functions
+# # =========================================================
+
+def get_or_create_country(cur, country_name):
+    cur.execute("SELECT country_id FROM country WHERE country_name = %s", (country_name,))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+
+    cur.execute("""
+        INSERT INTO country (country_name) VALUES (%s)
+        RETURNING country_id
+    """, (country_name,))
+    return cur.fetchone()[0]
+
+
+def get_or_create_region(cur, region_name, country_id):
+    # Region may be NULL in the CSV (empty string)
+    if not region_name:
+        region_name = "Unknown"
+
+    cur.execute("""
+        SELECT region_id FROM region
+        WHERE region_name = %s AND country_id = %s
+    """, (region_name, country_id))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+
+    cur.execute("""
+        INSERT INTO region (region_name, country_id)
+        VALUES (%s, %s)
+        RETURNING region_id
+    """, (region_name, country_id))
+    return cur.fetchone()[0]
+
+
+def get_or_create_city(cur, city_name, region_id):
+    cur.execute("""
+        SELECT city_id FROM city WHERE city_name = %s AND region_id = %s
+    """, (city_name, region_id))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+
+    cur.execute("""
+        INSERT INTO city (city_name, region_id)
+        VALUES (%s, %s)
+        RETURNING city_id
+    """, (city_name, region_id))
+    return cur.fetchone()[0]
+
+
+# =========================================================
+# Main Insert Function
+# =========================================================
+
+def load_orders(csv_path):
+    df = pd.read_csv(csv_path)
+    # Handle missing values properly - replace NaN with empty strings
+    df = df.fillna('')
+    dsn = get_db_dsn()
+
+    with psycopg2.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            # Set search path to northwind schema
+            cur.execute("SET search_path TO northwind;")
+            for _, row in df.iterrows():
+                # Step 1: Ensure location hierarchy exists
+
+                country_id = get_or_create_country(cur, row["ship_country"])
+                region_id = get_or_create_region(cur, row["ship_region"], country_id)
+                city_id = get_or_create_city(cur, row["ship_city"], region_id)
+
+                # Step 2: Insert into "order"
+                cur.execute("""
+                    INSERT INTO "order" (
+                        customer_id,
+                        employee_id,
+                        order_date,
+                        required_date,
+                        shipped_date,
+                        ship_via,
+                        freight,
+                        ship_name,
+                        ship_city_id,
+                        ship_postal_code
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    row["customer_id"],
+                    row["employee_id"],
+                    row["order_date"],
+                    row["required_date"],
+                    row["shipped_date"],
+                    row["ship_via"],
+                    row["freight"],
+                    row["ship_name"],
+                    city_id,
+                    row["ship_postal_code"]
+                ))
+        conn.commit()
+    print("Orders successfully loaded.")
+
+
+
+
+
 if __name__ == '__main__':
     """
     Command-line interface for loading an Excel file and saving its sheets as CSVs.
@@ -121,3 +238,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     dfs = load_excel_sheets(args.excel)
     save_csvs(dfs)
+
+    load_orders("data/normalized/Order.csv")
+    
