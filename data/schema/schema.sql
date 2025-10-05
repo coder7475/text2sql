@@ -1,0 +1,1 @@
+-- Add your normalized schema SQL here. This file is intentionally empty in the scaffold.

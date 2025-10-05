@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: northwind_db
+      POSTGRES_USER: northwind_admin
+      POSTGRES_PASSWORD: example
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

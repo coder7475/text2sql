@@ -1,0 +1,1 @@
+Place `northwind.xlsx` in `data/raw/` (not included).
