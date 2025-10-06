@@ -20,14 +20,14 @@ logger = logging.getLogger(__name__)
 
 def load_excel_sheets(path):
     """
-    Load all sheets from an Excel file into a dictionary of pandas DataFrames.
-
-    Args:
-        path (str or Path): Path to the Excel file.
-
+    Read every sheet from an Excel workbook and return them keyed by sheet name.
+    
+    Parameters:
+        path (str | Path): Path to the Excel file to read.
+    
     Returns:
-        dict: Dictionary where keys are sheet names and values are DataFrames.
-
+        dict: Mapping of sheet name to pandas DataFrame for each sheet in the workbook.
+    
     Raises:
         FileNotFoundError: If the specified Excel file does not exist.
     """
@@ -65,14 +65,15 @@ def to_snake_case(s):
     
 def clean_columns(df):
     """
-    Normalize DataFrame column names by stripping whitespace, converting to lowercase,
-    and replacing spaces with underscores.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-
+    Normalize DataFrame column names to snake_case.
+    
+    Creates and returns a copy of the input DataFrame with all column names converted to snake_case (whitespace trimmed, camelCase/PascalCase converted, spaces replaced with underscores, and lowercased).
+    
+    Parameters:
+        df (pd.DataFrame): DataFrame whose column names will be normalized.
+    
     Returns:
-        pd.DataFrame: DataFrame with cleaned column names.
+        pd.DataFrame: A copy of `df` with cleaned column names.
     """
     df = df.copy()
     df.columns = [to_snake_case(c) for c in df.columns]
@@ -80,18 +81,15 @@ def clean_columns(df):
 
 def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Handle missing values in a DataFrame.
-
-    Numeric columns: fill NaN with 0.
-    String/object columns: fill NaN with empty string.
-    Datetime columns: fill NaN with pd.Timestamp('1970-01-01').
-    Boolean columns: fill NaN with False.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-
+    Fill missing values in a DataFrame according to column types.
+    
+    Numeric columns are filled with 0; boolean columns with False; datetime columns with pd.Timestamp('1970-01-01'); all other columns with an empty string.
+    
+    Parameters:
+        df (pd.DataFrame): Input DataFrame to process.
+    
     Returns:
-        pd.DataFrame: DataFrame with missing values handled.
+        pd.DataFrame: A copy of the DataFrame with missing values filled as described.
     """
     df = df.copy()
     for col in df.columns:
@@ -107,12 +105,12 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
 
 def save_csvs(dfs, out_dir='data/normalized'):
     """
-    Save a dictionary of DataFrames to CSV files in the specified output directory.
-    Column names are cleaned before saving.
-
-    Args:
-        dfs (dict): Dictionary of DataFrames to save.
-        out_dir (str or Path): Output directory for CSV files (default: 'data/normalized').
+    Write cleaned DataFrames from a mapping to CSV files in the given output directory.
+    
+    Each DataFrame has its column names normalized and missing values filled before being written.
+    Parameters:
+        dfs (dict): Mapping of base file name (string) to pandas.DataFrame to save.
+        out_dir (str | Path): Directory where CSV files will be created (directory is created if missing).
     """
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -129,6 +127,15 @@ def save_csvs(dfs, out_dir='data/normalized'):
 # # =========================================================
 
 def get_or_create_country(cur, country_name):
+    """
+    Retrieve the primary key for a country by name, inserting a new country row if none exists.
+    
+    Parameters:
+        country_name (str): The country name to look up or insert.
+    
+    Returns:
+        country_id (int): The `country_id` of the existing or newly created country.
+    """
     cur.execute("SELECT country_id FROM country WHERE country_name = %s", (country_name,))
     result = cur.fetchone()
     if result:
@@ -143,6 +150,17 @@ def get_or_create_country(cur, country_name):
 
 def get_or_create_region(cur, region_name, country_id):
     # Region may be NULL in the CSV (empty string)
+    """
+    Retrieve the ID for a region with the given name and country, inserting a new region if none exists.
+    
+    Parameters:
+        cur: Database cursor used to execute queries.
+        region_name (str): Name of the region; empty or falsy values are treated as "Unknown".
+        country_id (int): Primary key of the country to which the region belongs.
+    
+    Returns:
+        region_id (int): The existing or newly created region's ID.
+    """
     if not region_name:
         region_name = "Unknown"
 
@@ -163,6 +181,17 @@ def get_or_create_region(cur, region_name, country_id):
 
 
 def get_or_create_city(cur, city_name, region_id):
+    """
+    Retrieve the city ID for a given city name and region, inserting a new city row if none exists.
+    
+    Parameters:
+        cur: Database cursor used to execute SQL statements (e.g., a psycopg2 cursor).
+        city_name (str): The name of the city to look up or insert.
+        region_id (int): The region_id to associate with the city.
+    
+    Returns:
+        int: The `city_id` of the existing or newly created city.
+    """
     cur.execute("""
         SELECT city_id FROM city WHERE city_name = %s AND region_id = %s
     """, (city_name, region_id))
@@ -180,6 +209,14 @@ def get_or_create_city(cur, city_name, region_id):
 
 
 def load_orders(csv_path):
+    """
+    Load orders from a CSV file into the northwind "order" table, creating country/region/city rows as needed.
+    
+    Reads the CSV at csv_path, fills missing values, connects to the PostgreSQL DSN from configuration, sets search_path to northwind, ensures ship_country/ship_region/ship_city exist (inserting when necessary), inserts each row into the "order" table, and commits the transaction. Prints a completion message on success.
+    
+    Parameters:
+        csv_path (str | os.PathLike): Path to the orders CSV file.
+    """
     df = pd.read_csv(csv_path)
     df = handle_missing_values(df)
     dsn = get_db_dsn()
@@ -198,6 +235,15 @@ def load_orders(csv_path):
                 # Step 2: Insert into "order"
                 # Convert pandas/numpy types to native Python types
                 def convert_value(val):
+                    """
+                    Convert pandas/NumPy scalar and missing values to native Python equivalents.
+                    
+                    Parameters:
+                        val: The input value (possibly a pandas/NumPy scalar or missing value) to normalize.
+                    
+                    Returns:
+                        The normalized value: `None` if `val` is missing, a native Python scalar if `val` is a NumPy scalar, or `val` unchanged otherwise.
+                    """
                     if pd.isna(val):
                         return None
                     elif hasattr(val, 'item'):  # NumPy scalar
@@ -238,15 +284,17 @@ def load_orders(csv_path):
 
 def load_generic_csv(csv_path, table_name, city_col="city", region_col="region", country_col="country", id_col=None):
     """
-    Generic loader for CSV files into tables with optional city/region/country mapping.
+    Load rows from a CSV file into a database table, optionally resolving and inserting city/region/country hierarchy.
     
-    Args:
-        csv_path (str): Path to CSV file.
-        table_name (str): Target table in DB.
-        city_col (str): Column name for city in CSV.
-        region_col (str): Column name for region in CSV.
-        country_col (str): Column name for country in CSV.
-        id_col (str): Column to use for ON CONFLICT handling (primary key).
+    Reads the CSV at csv_path, fills missing values, connects to the northwind schema, and inserts each row into table_name. If the CSV contains city/region/country columns (names provided by city_col, region_col, country_col), the function ensures corresponding country, region, and city records exist and adds the resulting city_id to inserts. If id_col is provided, conflicts on that column are ignored (`ON CONFLICT (...) DO NOTHING`).
+    
+    Parameters:
+        csv_path (str): Path to the input CSV file.
+        table_name (str): Target table name to insert rows into.
+        city_col (str): Column name in the CSV containing city names (default "city").
+        region_col (str): Column name in the CSV containing region names (default "region").
+        country_col (str): Column name in the CSV containing country names (default "country").
+        id_col (str | None): Column to use for conflict resolution; when provided, uses `ON CONFLICT (id_col) DO NOTHING`.
     """
     df = pd.read_csv(csv_path)  
     df = handle_missing_values(df)

@@ -15,13 +15,12 @@ from src.config import get_db_dsn
 
 def apply_schema(sql_path):
     """
-    Apply the database schema from the given SQL file.
-
-    Args: 
-        sql_path (str or Path): Path to the SQL schema file.
-
-    This function connects to the database using the DSN from config,
-    reads the SQL schema file, and executes it to create/update the schema.
+    Apply the database schema defined in an SQL file to the configured PostgreSQL database.
+    
+    Reads SQL from `sql_path` and executes it against the database using the DSN obtained from configuration. Prints "Schema applied." on success.
+    
+    Parameters:
+        sql_path (str | pathlib.Path): Path to the SQL schema file to execute.
     """
     dsn = get_db_dsn()
     with psycopg2.connect(dsn) as conn:
