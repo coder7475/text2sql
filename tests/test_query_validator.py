@@ -25,10 +25,12 @@ def test_select_with_existing_limit_unchanged():
 ])
 def test_rejects_dangerous_keywords(dangerous_kw):
     """
-    Test that queries containing dangerous SQL keywords are rejected by the validator.
-
-    The validator should raise a ValueError if the query contains any of the following keywords:
-    UPDATE, DELETE, DROP, ALTER.
+    Verify that a query starting with a dangerous SQL keyword is rejected by the validator.
+    
+    Raises ValueError with message "Only SELECT statements are allowed." for queries constructed with dangerous SQL keywords such as INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, GRANT, and REVOKE.
+    
+    Parameters:
+        dangerous_kw (str): Dangerous SQL keyword used to build the test query.
     """
     query = f"{dangerous_kw} cities SET name='X';"
     with pytest.raises(ValueError, match="Only SELECT statements are allowed."):
