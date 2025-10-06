@@ -39,10 +39,11 @@ import pandas as pd
 import logging
 import psycopg2
 
-
-# Add the parent directory to Python path to import from src
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from src.utils import get_or_create_city, get_or_create_country, get_or_create_region
 from src.config import get_db_dsn
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ def to_snake_case(s):
     # Convert camelCase or PascalCase to snake_case
     s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
     s = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s)
-    
+
     return s.lower()
     
 def clean_columns(df):
@@ -152,103 +153,6 @@ def save_csvs(dfs, out_dir='data/normalized'):
     logger.info(f"Saved {len(dfs)} tables to {out}")
 
 
-# # =========================================================
-# # Helper Functions
-# # =========================================================
-
-def get_or_create_country(cur, country_name):
-    """
-    Get the country_id for a given country_name, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        country_name (str): Name of the country.
-
-    Returns:
-        int: country_id
-    """
-    cur.execute("SELECT country_id FROM country WHERE country_name = %s", (country_name,))
-    result = cur.fetchone()
-    if result:
-        return result[0]
-
-    cur.execute("""
-        INSERT INTO country (country_name) VALUES (%s)
-        RETURNING country_id
-    """, (country_name,))
-    return cur.fetchone()[0]
-
-
-def get_or_create_region(cur, region_name, country_id):
-    """
-    Get the region_id for a given region_name and country_id, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        region_name (str): Name of the region.
-        country_id (int): ID of the country.
-
-    Returns:
-        int: region_id
-    """
-    # Region may be NULL in the CSV (empty string)
-    """
-    Retrieve the ID for a region with the given name and country, inserting a new region if none exists.
-    
-    Parameters:
-        cur: Database cursor used to execute queries.
-        region_name (str): Name of the region; empty or falsy values are treated as "Unknown".
-        country_id (int): Primary key of the country to which the region belongs.
-    
-    Returns:
-        region_id (int): The existing or newly created region's ID.
-    """
-    if not region_name:
-        region_name = "Unknown"
-
-    cur.execute("""
-        SELECT region_id FROM region
-        WHERE region_name = %s AND country_id = %s
-    """, (region_name, country_id))
-    result = cur.fetchone()
-    if result:
-        return result[0]
-
-    cur.execute("""
-        INSERT INTO region (region_name, country_id)
-        VALUES (%s, %s)
-        RETURNING region_id
-    """, (region_name, country_id))
-    return cur.fetchone()[0]
-
-
-def get_or_create_city(cur, city_name, region_id):
-    """
-    Get the city_id for a given city_name and region_id, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        city_name (str): Name of the city.
-        region_id (int): ID of the region.
-
-    Returns:
-        int: city_id
-    """
-    cur.execute("""
-        SELECT city_id FROM city WHERE city_name = %s AND region_id = %s
-    """, (city_name, region_id))
-    result = cur.fetchone()
-    if result:
-        return result[0]
-
-    cur.execute("""
-        INSERT INTO city (city_name, region_id)
-        VALUES (%s, %s)
-        RETURNING city_id
-    """, (city_name, region_id))
-    return cur.fetchone()[0]
-
-
 
 def load_orders(csv_path):
     """
@@ -266,8 +170,6 @@ def load_orders(csv_path):
 
     with psycopg2.connect(dsn) as conn:
         with conn.cursor() as cur:
-            # Set search path to northwind schema
-            cur.execute("SET search_path TO northwind;")
             for _, row in df.iterrows():
                 # Step 1: Ensure location hierarchy exists
 
@@ -294,7 +196,7 @@ def load_orders(csv_path):
                     return val
                     
                 cur.execute("""
-                    INSERT INTO "order" (
+                    INSERT INTO orders (
                         order_id,
                         customer_id,
                         employee_id,
@@ -345,8 +247,6 @@ def load_generic_csv(csv_path, table_name, city_col="city", region_col="region",
 
     with psycopg2.connect(dsn) as conn:
         with conn.cursor() as cur:
-            cur.execute("SET search_path TO northwind;")
-
             for _, row in df.iterrows():
                 # Step 1: Resolve city hierarchy if columns exist
                 city_id = None
@@ -412,12 +312,12 @@ if __name__ == '__main__':
     csv_configs = [
         {
             "csv_path": "data/normalized/Category.csv",
-            "table_name": "category",
+            "table_name": "categories",
             "id_col": "category_id"
         },
         {
             "csv_path": "data/normalized/Customer.csv",
-            "table_name": "customer",
+            "table_name": "customers",
             "city_col": "city",
             "region_col": "region",
             "country_col": "country",
@@ -425,7 +325,7 @@ if __name__ == '__main__':
         },
         {
             "csv_path": "data/normalized/Employee.csv",
-            "table_name": "employee",
+            "table_name": "employees",
             "city_col": "city",
             "region_col": "region",
             "country_col": "country",
@@ -433,7 +333,7 @@ if __name__ == '__main__':
         },
         {   
             "csv_path": "data/normalized/Supplier.csv",
-            "table_name": "supplier",
+            "table_name": "suppliers",
             "city_col": "city",
             "region_col": "region",
             "country_col": "country",
@@ -441,12 +341,12 @@ if __name__ == '__main__':
         },
         {
             "csv_path": "data/normalized/Product.csv",
-            "table_name": "product",
+            "table_name": "products",
             "id_col": "product_id"
         },
         {
             "csv_path": "data/normalized/Shipper.csv",
-            "table_name": "shipper",
+            "table_name": "shippers",
             "id_col": "shipper_id"
         },
     ]
@@ -474,6 +374,6 @@ if __name__ == '__main__':
 
     order_detail_config = {
         "csv_path": order_detail_csv_path,
-        "table_name": "order_detail",
+        "table_name": "order_details",
     }
     load_generic_csv(**order_detail_config)

@@ -1,0 +1,96 @@
+# # =========================================================
+# # Helper Functions
+# # =========================================================
+
+def get_or_create_country(cur, country_name):
+    """
+    Get the country_id for a given country_name, or create it if it does not exist.
+
+    Args:
+        cur: psycopg2 cursor.
+        country_name (str): Name of the country.
+
+    Returns:
+        int: country_id
+    """
+    cur.execute("SELECT country_id FROM countries WHERE country_name = %s", (country_name,))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+
+    cur.execute("""
+        INSERT INTO countries (country_name) VALUES (%s)
+        RETURNING country_id
+    """, (country_name,))
+    return cur.fetchone()[0]
+
+
+def get_or_create_region(cur, region_name, country_id):
+    """
+    Get the region_id for a given region_name and country_id, or create it if it does not exist.
+
+    Args:
+        cur: psycopg2 cursor.
+        region_name (str): Name of the region.
+        country_id (int): ID of the country.
+
+    Returns:
+        int: region_id
+    """
+    # Region may be NULL in the CSV (empty string)
+    """
+    Retrieve the ID for a region with the given name and country, inserting a new region if none exists.
+    
+    Parameters:
+        cur: Database cursor used to execute queries.
+        region_name (str): Name of the region; empty or falsy values are treated as "Unknown".
+        country_id (int): Primary key of the country to which the region belongs.
+    
+    Returns:
+        region_id (int): The existing or newly created region's ID.
+    """
+    if not region_name:
+        region_name = "Unknown"
+
+    cur.execute("""
+        SELECT region_id FROM regions
+        WHERE region_name = %s AND country_id = %s
+    """, (region_name, country_id))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+
+    cur.execute("""
+        INSERT INTO regions (region_name, country_id)
+        VALUES (%s, %s)
+        RETURNING region_id
+    """, (region_name, country_id))
+    return cur.fetchone()[0]
+
+
+def get_or_create_city(cur, city_name, region_id):
+    """
+    Get the city_id for a given city_name and region_id, or create it if it does not exist.
+
+    Args:
+        cur: psycopg2 cursor.
+        city_name (str): Name of the city.
+        region_id (int): ID of the region.
+
+    Returns:
+        int: city_id
+    """
+    cur.execute("""
+        SELECT city_id FROM cities WHERE city_name = %s AND region_id = %s
+    """, (city_name, region_id))
+    result = cur.fetchone()
+    if result:
+        return result[0]
+
+    cur.execute("""
+        INSERT INTO cities (city_name, region_id)
+        VALUES (%s, %s)
+        RETURNING city_id
+    """, (city_name, region_id))
+    return cur.fetchone()[0]
+
