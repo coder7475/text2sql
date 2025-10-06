@@ -1,15 +1,44 @@
-"""Basic data loader utilities for Northwind dataset.
-- load_excel_sheets: read all sheets into pandas DataFrames
-- clean_columns: normalize column names
-- save_csvs: persist cleaned tables to data/normalized/
 """
+Basic data loader utilities for the Northwind dataset.
+
+This module provides functions and command-line utilities for:
+- Loading all sheets from an Excel file into pandas DataFrames.
+- Normalizing DataFrame column names to snake_case.
+- Handling missing values in DataFrames according to column type.
+- Saving cleaned DataFrames as CSV files in a normalized directory.
+- Loading CSVs into a PostgreSQL database, including handling of city/region/country
+  normalization and referential integrity for location hierarchies.
+- Command-line interface for converting Excel to CSV and loading all normalized data
+  into the database in the correct order.
+
+Main Functions:
+- load_excel_sheets: Read all sheets from an Excel file.
+- clean_columns: Normalize DataFrame column names.
+- handle_missing_values: Fill missing values appropriately.
+- save_csvs: Save cleaned DataFrames to CSV.
+- load_orders: Load orders with location hierarchy into the database.
+- load_generic_csv: Generic loader for other tables with optional location mapping.
+
+Helper Functions:
+- get_or_create_country, get_or_create_region, get_or_create_city: Ensure location
+  hierarchy exists in the database.
+
+Usage (CLI):
+    python src/data_loader.py --excel path/to/northwind.xlsx
+
+Requires:
+- pandas
+- psycopg2
+- src.config.get_db_dsn
+"""
+
 import sys
 import os
 from pathlib import Path
 import pandas as pd
 import logging
 import psycopg2
-# from psycopg2.extras import execute_values
+
 
 # Add the parent directory to Python path to import from src
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -128,13 +157,14 @@ def save_csvs(dfs, out_dir='data/normalized'):
 
 def get_or_create_country(cur, country_name):
     """
-    Retrieve the primary key for a country by name, inserting a new country row if none exists.
-    
-    Parameters:
-        country_name (str): The country name to look up or insert.
-    
+    Get the country_id for a given country_name, or create it if it does not exist.
+
+    Args:
+        cur: psycopg2 cursor.
+        country_name (str): Name of the country.
+
     Returns:
-        country_id (int): The `country_id` of the existing or newly created country.
+        int: country_id
     """
     cur.execute("SELECT country_id FROM country WHERE country_name = %s", (country_name,))
     result = cur.fetchone()
@@ -149,6 +179,17 @@ def get_or_create_country(cur, country_name):
 
 
 def get_or_create_region(cur, region_name, country_id):
+    """
+    Get the region_id for a given region_name and country_id, or create it if it does not exist.
+
+    Args:
+        cur: psycopg2 cursor.
+        region_name (str): Name of the region.
+        country_id (int): ID of the country.
+
+    Returns:
+        int: region_id
+    """
     # Region may be NULL in the CSV (empty string)
     """
     Retrieve the ID for a region with the given name and country, inserting a new region if none exists.
@@ -182,15 +223,15 @@ def get_or_create_region(cur, region_name, country_id):
 
 def get_or_create_city(cur, city_name, region_id):
     """
-    Retrieve the city ID for a given city name and region, inserting a new city row if none exists.
-    
-    Parameters:
-        cur: Database cursor used to execute SQL statements (e.g., a psycopg2 cursor).
-        city_name (str): The name of the city to look up or insert.
-        region_id (int): The region_id to associate with the city.
-    
+    Get the city_id for a given city_name and region_id, or create it if it does not exist.
+
+    Args:
+        cur: psycopg2 cursor.
+        city_name (str): Name of the city.
+        region_id (int): ID of the region.
+
     Returns:
-        int: The `city_id` of the existing or newly created city.
+        int: city_id
     """
     cur.execute("""
         SELECT city_id FROM city WHERE city_name = %s AND region_id = %s
@@ -210,15 +251,16 @@ def get_or_create_city(cur, city_name, region_id):
 
 def load_orders(csv_path):
     """
-    Load orders from a CSV file into the northwind "order" table, creating country/region/city rows as needed.
-    
-    Reads the CSV at csv_path, fills missing values, connects to the PostgreSQL DSN from configuration, sets search_path to northwind, ensures ship_country/ship_region/ship_city exist (inserting when necessary), inserts each row into the "order" table, and commits the transaction. Prints a completion message on success.
-    
-    Parameters:
-        csv_path (str | os.PathLike): Path to the orders CSV file.
+    Load orders from a CSV file into the database, ensuring location hierarchy exists.
+
+    Args:
+        csv_path (str): Path to the Order.csv file.
+
+    Returns:
+        None
     """
     df = pd.read_csv(csv_path)
-    # df = handle_missing_values(df)
+    df = handle_missing_values(df)
     dsn = get_db_dsn()
 
     with psycopg2.connect(dsn) as conn:
@@ -348,7 +390,8 @@ def load_generic_csv(csv_path, table_name, city_col="city", region_col="region",
 
 if __name__ == '__main__':
     """
-    Command-line interface for loading an Excel file and saving its sheets as CSVs.
+    Command-line interface for loading an Excel file and saving its sheets as CSVs,
+    then loading all normalized CSVs into the database in the correct order.
 
     Usage:
         python src/data_loader.py --excel path/to/northwind.xlsx
@@ -398,9 +441,6 @@ if __name__ == '__main__':
         {
             "csv_path": "data/normalized/Product.csv",
             "table_name": "product",
-            "city_col": "city",
-            "region_col": "region",
-            "country_col": "country",
             "id_col": "product_id"
         },
         {
