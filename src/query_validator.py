@@ -41,12 +41,11 @@ class QueryValidator:
             if re.search(kw, query, re.IGNORECASE):
                 raise ValueError(f"Dangerous keyword detected: {kw}")
 
-        return query
+        # Ensure LIMIT is present and appended before any trailing semicolon
+        if not re.search(r'\blimit\b', query, re.IGNORECASE):
+            # Remove any trailing semicolon and whitespace
+            query = re.sub(r';\s*$', '', query)
+            query += " LIMIT 1000;"
+        
 
-# Example use case:
-if __name__ == "__main__":
-    try:
-        safe_query = QueryValidator.validate("SELECT * FROM cities;")
-        print("Validated query:", safe_query)
-    except ValueError as e:
-        print("Validation error:", e)
+        return query
