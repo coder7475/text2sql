@@ -142,3 +142,11 @@ Load the data
 ```bash
 python3 src/data_loader.py --excel data/raw/northwind.xlsx
 ```
+
+## Testing
+
+From root use:
+
+```bash
+pytest -v
+```
