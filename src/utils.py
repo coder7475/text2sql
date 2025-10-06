@@ -62,18 +62,6 @@ def get_or_create_country(cur, country_name):
 
 def get_or_create_region(cur, region_name, country_id):
     """
-    Get the region_id for a given region_name and country_id, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        region_name (str): Name of the region.
-        country_id (int): ID of the country.
-
-    Returns:
-        int: region_id
-    """
-    # Region may be NULL in the CSV (empty string)
-    """
     Retrieve the ID for a region with the given name and country, inserting a new region if none exists.
     
     Parameters:
