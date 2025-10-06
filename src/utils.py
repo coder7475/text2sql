@@ -17,7 +17,7 @@ def to_snake_case(s):
 
     This function normalizes a string by:
     - Stripping leading/trailing whitespace
-    - Replacing spaces with underscores
+    - Remove Spaces
     - Converting camelCase or PascalCase to snake_case
     - Lowercasing all characters
 

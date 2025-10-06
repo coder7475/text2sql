@@ -143,12 +143,17 @@ if __name__ == "__main__":
     sql_query = generate_sql_query(prompt)
 
     sanitized_query = sanitize_sql(sql_query)
+
+    if not sanitized_query:
+        print("Generated SQL query is empty after sanitization")
+        sys.exit(1)
     
     try:
         validated_query = QueryValidator.validate(sanitized_query)
         print("Generated SQL Query:", validated_query)
     except ValueError as e:
         print("Validation error:", e)
+        sys.exit(1)
 
     df = execute_query_on_db(validated_query)
 
