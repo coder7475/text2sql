@@ -128,3 +128,17 @@ Connected to: northwind_db
 ```
 
 You’re good to go!
+
+## Data Model
+
+ER Diagram
+
+[![](./Northwind_ER_Diagram.png)]
+
+## Data Engineering
+
+Load the data
+
+```bash
+python3 src/data_loader.py --excel data/raw/northwind.xlsx
+```
