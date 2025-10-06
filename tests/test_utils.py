@@ -1,5 +1,5 @@
 import pytest
-from src.utils import to_snake_case, df_to_json
+from src.utils import to_snake_case
 import pandas as pd
 
 # ----------------------
