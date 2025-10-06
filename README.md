@@ -304,7 +304,11 @@ Generate text coverage html
 pytest --cov=src --cov-report=html
 ```
 
-to see HTML coverage open `htmlcov/index.html` in browser.
+to see HTML coverage open `htmlcov/index.html` in browser:
+
+```
+http://localhost:5500/htmlcov/
+```
 
 ## References
 
