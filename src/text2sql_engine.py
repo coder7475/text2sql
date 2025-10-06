@@ -3,11 +3,12 @@ import os
 import sys
 from dotenv import load_dotenv
 from google import genai
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.query_validator import QueryValidator
+from src.utils import df_to_json, execute_query_on_db
 
 load_dotenv()
+
 client = genai.Client()
 
 
@@ -139,13 +140,23 @@ if __name__ == "__main__":
         """
 
 
-    sql_query = generate_sql_query(prompt)
-    # sql_query = "SELECT DISTINCT city_name FROM cities;"
+    # sql_query = generate_sql_query(prompt)
+    sql_query = "SELECT DISTINCT city_name FROM cities;"
     sanitized_query = sanitize_sql(sql_query)
     
     try:
         validated_query = QueryValidator.validate("SELECT * FROM cities;")
         print("Generated SQL Query:", validated_query)
+
     except ValueError as e:
         print("Validation error:", e)
 
+    df = execute_query_on_db(validated_query)
+
+
+    if df.empty:
+        print("\nNo results found or query failed.")
+    else:
+        print(f"\nQuery: {user_question}")
+        print("\nQuery Results (JSON):")
+        print(df_to_json(df))

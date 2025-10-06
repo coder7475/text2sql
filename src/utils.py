@@ -1,6 +1,15 @@
 # # =========================================================
 # # Helper Functions
 # # =========================================================
+import os
+import sys
+import psycopg2
+import pandas as pd
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from src.config import get_db_dsn
+
 
 def to_snake_case(s):
     """
@@ -119,4 +128,24 @@ def get_or_create_city(cur, city_name, region_id):
         RETURNING city_id
     """, (city_name, region_id))
     return cur.fetchone()[0]
+
+
+def execute_query_on_db(query: str) -> pd.DataFrame:
+    """
+    Execute validated SQL query on the PostgreSQL Northwind database.
+    Returns results as a pandas DataFrame.
+    """
+    dsn = get_db_dsn()
+    try:
+        with psycopg2.connect(dsn) as conn:
+            df = pd.read_sql_query(query, conn)
+        return df
+    except Exception as e:
+        print(f"Database execution error: {e}")
+        return pd.DataFrame()
+
+
+def df_to_json(df: pd.DataFrame) -> str:
+    """Convert pandas DataFrame to JSON (records format)."""
+    return df.to_json(orient="records", indent=2)
 

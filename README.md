@@ -159,6 +159,122 @@ Run
 python3 src/text2sql_engine.py
 ```
 
+output:
+
+```json
+python3 src/text2sql_engine.py
+Generated SQL Query: SELECT * FROM cities;
+/home/fahad/text2sql/src/../src/utils.py:141: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql_query(query, conn)
+
+Query: Find all unique city names
+
+Query Results (JSON):
+[
+  {
+    "city_id":1,
+    "city_name":"Berlin",
+    "region_id":1,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":2,
+    "city_name":"M\u00e9xico D.F.",
+    "region_id":2,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":3,
+    "city_name":"London",
+    "region_id":3,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":4,
+    "city_name":"Lule\u00e5",
+    "region_id":4,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":5,
+    "city_name":"Mannheim",
+    "region_id":1,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":6,
+    "city_name":"Strasbourg",
+    "region_id":5,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":7,
+    "city_name":"Madrid",
+    "region_id":6,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":8,
+    "city_name":"Marseille",
+    "region_id":5,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":9,
+    "city_name":"Tsawassen",
+    "region_id":7,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":10,
+    "city_name":"Buenos Aires",
+    "region_id":8,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+  {
+    "city_id":11,
+    "city_name":"Bern",
+    "region_id":9,
+    "created_at":1759732635038,
+    "updated_at":1759732635038
+  },
+
+ ....
+
+  {
+    "city_id":95,
+    "city_name":"Annecy",
+    "region_id":5,
+    "created_at":1759732635709,
+    "updated_at":1759732635709
+  },
+  {
+    "city_id":96,
+    "city_name":"Ste-Hyacinthe",
+    "region_id":25,
+    "created_at":1759732635709,
+    "updated_at":1759732635709
+  },
+  {
+    "city_id":97,
+    "city_name":"Colchester",
+    "region_id":45,
+    "created_at":1759732830414,
+    "updated_at":1759732830414
+  }
+]
+```
+
 ## References
 
 - [GenAI Doc](https://ai.google.dev/gemini-api/docs/quickstart)
