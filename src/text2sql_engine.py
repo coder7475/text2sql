@@ -145,9 +145,8 @@ if __name__ == "__main__":
     sanitized_query = sanitize_sql(sql_query)
     
     try:
-        validated_query = QueryValidator.validate("SELECT * FROM cities;")
+        validated_query = QueryValidator.validate(sanitized_query)
         print("Generated SQL Query:", validated_query)
-
     except ValueError as e:
         print("Validation error:", e)
 
