@@ -143,14 +143,6 @@ Load the data
 python3 src/data_loader.py --excel data/raw/northwind.xlsx
 ```
 
-## Testing
-
-From root use:
-
-```bash
-pytest -v
-```
-
 ## Text2SQL engine
 
 Run
@@ -274,6 +266,22 @@ Query Results (JSON):
   }
 ]
 ```
+
+## Testing
+
+From root use:
+
+```bash
+pytest -v
+```
+
+Generate text coverage html
+
+```bash
+pytest --cov=src --cov-report=html
+```
+
+to see HTML coverage open `htmlcov/index.html` in browser.
 
 ## References
 
