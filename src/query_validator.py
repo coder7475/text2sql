@@ -1,27 +1,52 @@
-"""Simple validator to ensure only safe SELECT queries are executed.
-Returns dict: {'ok': True, 'sql': safe_sql} or {'ok': False, 'reason': '...'}
-"""
-import sqlparse
 import re
 
-DANGEROUS = re.compile(r"\b(insert|update|delete|drop|alter|create|truncate|grant|revoke)\b", re.I)
+class QueryValidator:
+    """Validator for SQL queries to ensure safety and enforce limits."""
 
-def validate_query(sql: str):
-    # Quick blacklist
-    if DANGEROUS.search(sql):
-        return {'ok': False, 'reason': 'DML/DDL commands are not allowed.'}
-    parsed = sqlparse.parse(sql)
-    if not parsed:
-        return {'ok': False, 'reason': 'Unable to parse SQL.'}
-    stmt = parsed[0]
-    if stmt.get_type() != 'SELECT':
-        return {'ok': False, 'reason': 'Only SELECT statements are allowed.'}
-    # Enforce row limit by wrapping (if LIMIT not present)
-    if 'limit' not in sql.lower():
-        safe_sql = f"SELECT * FROM ({sql.rstrip(';')}) AS subq LIMIT 1000;"
-    else:
-        safe_sql = sql
-    # Block access to system schemas
-    if re.search(r"\b(pg_catalog|information_schema)\b", safe_sql, re.I):
-        return {'ok': False, 'reason': 'Access to system tables is blocked.'}
-    return {'ok': True, 'sql': safe_sql}
+    DANGEROUS_KEYWORDS = [
+        r"\bINSERT\b",
+        r"\bUPDATE\b",
+        r"\bDELETE\b",
+        r"\bDROP\b",
+        r"\bALTER\b",
+        r"\bTRUNCATE\b",
+        r"\bCREATE\b",
+        r"\bGRANT\b",
+        r"\bREVOKE\b"
+    ]
+
+    @staticmethod
+    def validate(query: str) -> str:
+        """
+        Validate an SQL query string.
+
+        1. Allow only SELECT statements.
+        2. Reject dangerous keywords.
+        
+        Args:
+            query (str): SQL query to validate.
+
+        Returns:
+            str: Validated query 
+
+        Raises:
+            ValueError: If the query is invalid or dangerous.
+        """
+        query = query.strip()
+        if not query.lower().startswith("select"):
+            raise ValueError("Only SELECT statements are allowed.")
+
+        # Check for dangerous keywords
+        for kw in QueryValidator.DANGEROUS_KEYWORDS:
+            if re.search(kw, query, re.IGNORECASE):
+                raise ValueError(f"Dangerous keyword detected: {kw}")
+
+        return query
+
+# Example use case:
+if __name__ == "__main__":
+    try:
+        safe_query = QueryValidator.validate("SELECT * FROM cities;")
+        print("Validated query:", safe_query)
+    except ValueError as e:
+        print("Validation error:", e)

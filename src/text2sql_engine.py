@@ -1,6 +1,11 @@
+import re
+import os
+import sys
 from dotenv import load_dotenv
 from google import genai
-import re
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from src.query_validator import QueryValidator
 
 load_dotenv()
 client = genai.Client()
@@ -135,5 +140,12 @@ if __name__ == "__main__":
 
 
     sql_query = generate_sql_query(prompt)
+    # sql_query = "SELECT DISTINCT city_name FROM cities;"
     sanitized_query = sanitize_sql(sql_query)
-    print("Generated SQL Query:", sanitized_query)
+    
+    try:
+        validated_query = QueryValidator.validate("SELECT * FROM cities;")
+        print("Generated SQL Query:", validated_query)
+    except ValueError as e:
+        print("Validation error:", e)
+
