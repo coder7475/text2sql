@@ -74,15 +74,14 @@ def load_excel_sheets(path):
 def clean_columns(df):
     """
     Normalize DataFrame column names to snake_case.
-
-    Returns a copy of the input DataFrame with all column names converted to snake_case
-    (whitespace trimmed, camelCase/PascalCase converted, spaces replaced with underscores, and lowercased).
-
-    Args:
+    
+    Produces a copy of the input DataFrame with all column names converted to snake_case.
+    
+    Parameters:
         df (pd.DataFrame): DataFrame whose column names will be normalized.
-
+    
     Returns:
-        pd.DataFrame: A copy of `df` with cleaned column names.
+        pd.DataFrame: A copy of `df` with cleaned (snake_case) column names.
     """
     df = df.copy()
     df.columns = [to_snake_case(c) for c in df.columns]
@@ -117,13 +116,13 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
 
 def save_csvs(dfs, out_dir='data/normalized'):
     """
-    Write cleaned DataFrames from a mapping to CSV files in the given output directory.
-
-    Each DataFrame has its column names normalized and missing values filled before being written.
-
-    Args:
-        dfs (dict): Mapping of base file name (string) to pandas.DataFrame to save.
-        out_dir (str or Path): Directory where CSV files will be created (directory is created if missing).
+    Save cleaned DataFrame objects from a name-to-DataFrame mapping as CSV files in the specified output directory.
+    
+    Each DataFrame has its column names normalized and missing values filled before being written to a CSV file named "<name>.csv". The output directory is created if it does not exist.
+    
+    Parameters:
+        dfs (dict): Mapping of base file name (str) to pandas.DataFrame to save.
+        out_dir (str | Path): Target directory for CSV files; created if missing.
     """
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -138,13 +137,12 @@ def save_csvs(dfs, out_dir='data/normalized'):
 
 def load_orders(csv_path):
     """
-    Load orders from a CSV file into the database, ensuring location hierarchy exists.
-
-    Args:
-        csv_path (str): Path to the Order.csv file.
-
-    Returns:
-        None
+    Load orders from a CSV into the database and ensure each row's shipping location hierarchy exists.
+    
+    Reads the CSV at csv_path, normalizes missing values, ensures country/region/city records exist for each row, and inserts rows into the `orders` table.
+    
+    Parameters:
+        csv_path (str): Path to the orders CSV. The CSV must contain columns: `order_id`, `customer_id`, `employee_id`, `order_date`, `required_date`, `shipped_date`, `ship_via`, `freight`, `ship_name`, `ship_city`, `ship_region`, `ship_country`, and `ship_postal_code`.
     """
     df = pd.read_csv(csv_path)
     df = handle_missing_values(df)
@@ -211,20 +209,17 @@ def load_orders(csv_path):
 
 def load_generic_csv(csv_path, table_name, city_col="city", region_col="region", country_col="country", id_col=None):
     """
-    Load rows from a CSV file into a database table, optionally resolving and inserting city/region/country hierarchy.
-
-    Reads the CSV at `csv_path`, fills missing values, connects to the northwind schema, and inserts each row into `table_name`.
-    If the CSV contains city/region/country columns (names provided by `city_col`, `region_col`, `country_col`), the function
-    ensures corresponding country, region, and city records exist and adds the resulting city_id to inserts.
-    If `id_col` is provided, conflicts on that column are ignored (`ON CONFLICT (...) DO NOTHING`).
-
-    Args:
+    Insert rows from a CSV into a database table, resolving an optional country/region/city hierarchy.
+    
+    Reads the CSV at `csv_path`, fills missing values using module utilities, and inserts each row into `table_name`. If the CSV contains columns for country and city (names provided by `country_col` and `city_col`), the function ensures country, region, and city records exist and adds the resulting `city_id` to the inserted row. When `id_col` is provided, conflicting inserts on that column are ignored (`ON CONFLICT (id_col) DO NOTHING`).
+    
+    Parameters:
         csv_path (str): Path to the input CSV file.
-        table_name (str): Target table name to insert rows into.
-        city_col (str): Column name in the CSV containing city names (default "city").
-        region_col (str): Column name in the CSV containing region names (default "region").
-        country_col (str): Column name in the CSV containing country names (default "country").
-        id_col (str or None): Column to use for conflict resolution; when provided, uses `ON CONFLICT (id_col) DO NOTHING`.
+        table_name (str): Target database table name for inserts.
+        city_col (str): CSV column name containing city names (default "city").
+        region_col (str): CSV column name containing region names (default "region").
+        country_col (str): CSV column name containing country names (default "country").
+        id_col (str or None): Column name to use for conflict resolution; if provided, conflicts on this column are ignored.
     """
     df = pd.read_csv(csv_path)  
     df = handle_missing_values(df)

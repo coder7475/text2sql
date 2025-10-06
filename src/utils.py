@@ -39,14 +39,13 @@ def to_snake_case(s):
 
 def get_or_create_country(cur, country_name):
     """
-    Get the country_id for a given country_name, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        country_name (str): Name of the country.
-
+    Retrieve the ID of a country by name, creating the country if it does not exist.
+    
+    Parameters:
+        country_name (str): Name of the country to look up or create.
+    
     Returns:
-        int: country_id
+        int: The `country_id` of the existing or newly inserted country.
     """
     cur.execute("SELECT country_id FROM countries WHERE country_name = %s", (country_name,))
     result = cur.fetchone()
@@ -62,15 +61,16 @@ def get_or_create_country(cur, country_name):
 
 def get_or_create_region(cur, region_name, country_id):
     """
-    Get the region_id for a given region_name and country_id, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        region_name (str): Name of the region.
-        country_id (int): ID of the country.
-
+    Retrieve the ID for a region in a given country, inserting a new region if none exists.
+    
+    If `region_name` is falsy (empty or None), it is treated as "Unknown".
+    
+    Parameters:
+        region_name (str): Name of the region; empty or falsy values are treated as "Unknown".
+        country_id (int): Primary key of the country to which the region belongs.
+    
     Returns:
-        int: region_id
+        region_id (int): The existing or newly created region's ID.
     """
     # Region may be NULL in the CSV (empty string)
     """
@@ -105,15 +105,14 @@ def get_or_create_region(cur, region_name, country_id):
 
 def get_or_create_city(cur, city_name, region_id):
     """
-    Get the city_id for a given city_name and region_id, or create it if it does not exist.
-
-    Args:
-        cur: psycopg2 cursor.
-        city_name (str): Name of the city.
-        region_id (int): ID of the region.
-
+    Retrieve the city_id for the given city_name and region_id, creating a new city record if none exists.
+    
+    Parameters:
+        city_name (str): Name of the city to look up or create.
+        region_id (int): ID of the region the city belongs to.
+    
     Returns:
-        int: city_id
+        city_id (int): ID of the existing or newly created city.
     """
     cur.execute("""
         SELECT city_id FROM cities WHERE city_name = %s AND region_id = %s
@@ -132,8 +131,10 @@ def get_or_create_city(cur, city_name, region_id):
 
 def execute_query_on_db(query: str) -> pd.DataFrame:
     """
-    Execute validated SQL query on the PostgreSQL Northwind database.
-    Returns results as a pandas DataFrame.
+    Execute a SQL query against the PostgreSQL Northwind database and return the results as a DataFrame.
+    
+    Returns:
+        pandas.DataFrame: DataFrame containing the query results; an empty DataFrame if execution fails.
     """
     dsn = get_db_dsn()
     try:
@@ -146,6 +147,10 @@ def execute_query_on_db(query: str) -> pd.DataFrame:
 
 
 def df_to_json(df: pd.DataFrame) -> str:
-    """Convert pandas DataFrame to JSON (records format)."""
+    """
+    Serialize a DataFrame to a JSON array of records with two-space indentation.
+    
+    Returns:
+        str: JSON string representing the DataFrame in records orientation, indented with two spaces.
+    """
     return df.to_json(orient="records", indent=2)
-

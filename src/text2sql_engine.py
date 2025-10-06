@@ -13,7 +13,15 @@ client = genai.Client()
 
 
 def generate_sql_query(prompt: str) -> str:
-    """Generate SQL query from an English prompt using the Gemini API."""
+    """
+    Generate an SQL query from an English prompt using the Gemini API.
+    
+    Parameters:
+        prompt (str): Natural-language instruction describing the desired SQL query.
+    
+    Returns:
+        str: The generated SQL query as a string, or an empty string if generation failed.
+    """
     try:
         response = client.models.generate_content(
             model="gemini-2.5-flash", contents=prompt
@@ -25,7 +33,15 @@ def generate_sql_query(prompt: str) -> str:
 
 
 def sanitize_sql(sql: str) -> str:
-    """Sanitize the generated SQL query."""
+    """
+    Sanitize generated SQL by removing non-ASCII characters, trimming whitespace, and extracting SQL from fenced code blocks.
+    
+    Parameters:
+        sql (str): Input text that may contain generated SQL, including non-ASCII characters or a ```sql``` code fence.
+    
+    Returns:
+        str: The cleaned SQL string with non-ASCII characters removed, leading/trailing whitespace trimmed, and, if present, the contents of a ```sql ... ``` block extracted.
+    """
     # Remove non-ASCII characters
     sql = re.sub(r'[^\x00-\x7F]+', '', sql)
     # Strip leading/trailing whitespace

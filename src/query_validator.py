@@ -18,19 +18,18 @@ class QueryValidator:
     @staticmethod
     def validate(query: str) -> str:
         """
-        Validate an SQL query string.
-
-        1. Allow only SELECT statements.
-        2. Reject dangerous keywords.
+        Validate and normalize an SQL SELECT query for safety and limits.
         
-        Args:
-            query (str): SQL query to validate.
-
+        Strips surrounding whitespace, enforces that the statement begins with SELECT, rejects queries containing any configured dangerous SQL keywords, and ensures a LIMIT clause is present by appending "LIMIT 1000;" if missing.
+        
+        Parameters:
+            query (str): The SQL query to validate and possibly modify.
+        
         Returns:
-            str: Validated query 
-
+            str: The validated (and potentially modified) SQL query.
+        
         Raises:
-            ValueError: If the query is invalid or dangerous.
+            ValueError: If the query does not start with SELECT or contains a dangerous keyword; the exception message indicates the reason.
         """
         query = query.strip()
         if not query.lower().startswith("select"):
