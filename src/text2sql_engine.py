@@ -140,8 +140,8 @@ if __name__ == "__main__":
         """
 
 
-    # sql_query = generate_sql_query(prompt)
-    sql_query = "SELECT DISTINCT city_name FROM cities;"
+    sql_query = generate_sql_query(prompt)
+
     sanitized_query = sanitize_sql(sql_query)
     
     try:
@@ -152,7 +152,6 @@ if __name__ == "__main__":
         print("Validation error:", e)
 
     df = execute_query_on_db(validated_query)
-
 
     if df.empty:
         print("\nNo results found or query failed.")
