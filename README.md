@@ -162,3 +162,4 @@ python3 src/text2sql_engine.py
 ## References
 
 - [GenAI Doc](https://ai.google.dev/gemini-api/docs/quickstart)
+- [Prompting_text2SQL](https://medium.com/datamindedbe/prompt-engineering-for-a-better-sql-code-generation-with-llms-263562c0c35d)
