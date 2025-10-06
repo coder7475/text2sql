@@ -150,3 +150,15 @@ From root use:
 ```bash
 pytest -v
 ```
+
+## Text2SQL engine
+
+Run
+
+```sh
+python3 src/text2sql_engine.py
+```
+
+## References
+
+- [GenAI Doc](https://ai.google.dev/gemini-api/docs/quickstart)

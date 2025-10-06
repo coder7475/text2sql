@@ -1,6 +1,6 @@
+import os
 from pathlib import Path
 from dotenv import load_dotenv
-import os
 
 ENV_PATH = Path('.') / '.env'
 if ENV_PATH.exists():
