@@ -91,7 +91,6 @@ CREATE TABLE employee (
 );
 
 CREATE INDEX idx_employee_city_id ON employee(city_id);
-CREATE INDEX idx_employee_reports_to ON employee(reports_to);
 
 -- =========================================================
 -- Supplier

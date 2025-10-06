@@ -181,7 +181,7 @@ def get_or_create_city(cur, city_name, region_id):
 
 def load_orders(csv_path):
     df = pd.read_csv(csv_path)
-    df = handle_missing_values(df)
+    # df = handle_missing_values(df)
     dsn = get_db_dsn()
 
     with psycopg2.connect(dsn) as conn:
