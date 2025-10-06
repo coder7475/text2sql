@@ -2,6 +2,32 @@
 # # Helper Functions
 # # =========================================================
 
+def to_snake_case(s):
+    """
+    Convert a string to snake_case.
+
+    This function normalizes a string by:
+    - Stripping leading/trailing whitespace
+    - Replacing spaces with underscores
+    - Converting camelCase or PascalCase to snake_case
+    - Lowercasing all characters
+
+    Args:
+        s (str): The input string.
+
+    Returns:
+        str: The snake_case version of the input string.
+    """
+    import re
+    s = str(s).strip()
+    # Remove spaces
+    s = s.replace(' ', '')
+    # Convert camelCase or PascalCase to snake_case
+    s = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', s)
+    s = re.sub('([a-z0-9])([A-Z])', r'\1_\2', s)
+
+    return s.lower()
+
 def get_or_create_country(cur, country_name):
     """
     Get the country_id for a given country_name, or create it if it does not exist.
