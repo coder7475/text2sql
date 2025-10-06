@@ -1,6 +1,28 @@
 # Text2SQL Analytics System
 
-## Quickstart (local)
+## Project Overview
+
+The **Text2SQL Analytics System** allows users to interact with a normalized Northwind PostgreSQL database using natural language queries. Queries are converted into SQL via the **Gemini API**, validated for safety, executed on the database, and returned as structured outputs (JSON or pandas DataFrame).
+
+**Architecture Diagram:**
+
+```sh
+[User Input (Natural Language)]
+|
+v
+[Text2SQL Engine - Gemini API]
+|
+v
+[Query Sanitizer & Validator]
+|
+v
+[PostgreSQL DB]
+|
+v
+[Results: pandas DataFrame / JSON]
+```
+
+## Quickstart
 
 1. Create a Python 3.10+ virtual environment and activate it.
    ```bash
@@ -22,10 +44,12 @@
 text2sql-analytics/
 ├── README.md
 ├── requirements.txt
+├── docker-compose
 ├── .env.example
 ├── .gitignore
 ├── setup.py
 ├── data/
+│   ├── normalized/*
 │   ├── raw/
 │   │   └── northwind.xlsx
 │   └── schema/
@@ -34,7 +58,6 @@ text2sql-analytics/
 │   ├── __init__.py
 │   ├── config.py
 │   ├── data_loader.py
-│   ├── database.py
 │   ├── text2sql_engine.py
 │   ├── query_validator.py
 │   └── utils.py
@@ -42,18 +65,18 @@ text2sql-analytics/
 │   ├── __init__.py
 │   ├── conftest.py
 │   ├── test_data_loader.py
-│   ├── test_database.py
+|   |── test_db_connection.py
+|   |── test_mock_utils_db.py
 │   ├── test_query_validator.py
 │   ├── test_text2sql_engine.py
-│   └── test_accuracy/
-│       ├── test_simple_queries.py
-│       ├── test_intermediate_queries.py
-│       └── test_complex_queries.py
+│   ├── test_utils.py
+│   └── mocks/
+│       ├── mock_gemini_client.py
 ├── notebooks/
 │   └── analysis.ipynb
 └── scripts/
     ├── setup_database.py
-    └── run_evaluation.py
+
 ```
 
 ## Database Setup
