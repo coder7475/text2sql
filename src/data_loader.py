@@ -36,6 +36,7 @@ including:
 
 import sys
 import os
+import argparse
 from pathlib import Path
 import pandas as pd
 import logging
@@ -282,8 +283,6 @@ if __name__ == '__main__':
     Usage:
         python src/data_loader.py --excel path/to/northwind.xlsx
     """
-    import argparse
-    import os
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--excel', required=True, help='Path to northwind.xlsx (data/raw)')
