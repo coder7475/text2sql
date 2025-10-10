@@ -39,7 +39,7 @@ def sanitize_sql(sql: str) -> str:
 
 
 if __name__ == "__main__":
-    user_question = "Find all unique city names";
+    user_question = "List all customers from Germany";
     prompt = prompt = f"""
         You are a helpful assistant specializing in data analysis in a PostgreSQL warehouse.
         Answer the questions by providing SQL code that is compatible with the PostgreSQL environment.
