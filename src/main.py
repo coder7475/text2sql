@@ -1,10 +1,31 @@
 import time
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from google import genai
+
+from src.utils import build_prompt
+
+app = FastAPI(
+    title="Text2SQL API (Gemini + Northwind)",
+    version="1.0.0",
+    description="Convert natural language questions to SQL queries and execute them safely."
+)
 
 
 
-app = FastAPI()
+client = genai.Client()
+
+
+# Request and Response Model for generate-sql endpoint
+class SQLResponseModel(BaseModel):
+    sql_query: str
+    sanitized_query: str
+    validate_query: str
+    result_json: str
+
+class Text2SQLRequest(BaseModel):
+    question: str
 
 # Middlewares
 # Auth Middleware
@@ -67,10 +88,17 @@ async def custom_exception_handler(request: Request, exc: CustomException):
     )
 
 # Router
-@app.get("/test")
-async def test():
-    # Improved logic: Informative message and custom exception for demonstration
-    active_ips = list(requests.keys())
-    if len(active_ips) > 2:
-        raise CustomException(name=f"Too many active IPs: {active_ips}")
-    return JSONResponse({"message": "Request successful", "active_requesters": active_ips})
+@app.get("/")
+def root():
+    """Health check endpoint."""
+    return {"status": "ok", "message": "Text2SQL API running."}
+
+
+@app.post("/generate-sql", response_model=SQLResponseModel)
+def generate_and_execute_sql(request: Text2SQLRequest):
+    try:
+        prompt = build_prompt(request.question)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal error: {str(e)}")
