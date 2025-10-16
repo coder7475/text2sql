@@ -52,7 +52,25 @@ async def rate_limit(request: Request, call_next):
     response = await call_next(request)
     return response
 
+# Custom Exception class
+class CustomException(Exception):
+    def __init__(self, name: str):
+        self.name = name
+
+
+# Custom Exception Handler
+@app.exception_handler(CustomException)
+async def custom_exception_handler(request: Request, exc: CustomException):
+    return JSONResponse(
+        status_code=418,
+        content={"message": f"Oops! {exc.name} did something wrong."},
+    )
+
 # Router
 @app.get("/test")
 async def test():
-    return {"message": "Request successful"}
+    # Improved logic: Informative message and custom exception for demonstration
+    active_ips = list(requests.keys())
+    if len(active_ips) > 2:
+        raise CustomException(name=f"Too many active IPs: {active_ips}")
+    return JSONResponse({"message": "Request successful", "active_requesters": active_ips})
