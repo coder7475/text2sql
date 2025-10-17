@@ -290,6 +290,17 @@ Query Results (JSON):
 ]
 ```
 
+## Running the FastAPI Application
+
+To start the development server with hot-reload, run:
+
+```bash
+uvicorn src.main:app --reload
+```
+
+The API will be available at [http://localhost:8000](http://localhost:8000).  
+Access the automatically generated interactive documentation at [http://localhost:8000/docs](http://localhost:8000/docs) or the alternative ReDoc at [http://localhost:8000/redoc](http://localhost:8000/redoc).
+
 ## Testing
 
 From root use:
