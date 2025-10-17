@@ -40,7 +40,7 @@ app = FastAPI(
 # Auth Middleware
 @app.middleware
 async def add_process_time_header(request: Request, call_next):
-    start_time = time()
+    start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time
     response.headers["X-Process-Time"] = str(process_time)
@@ -53,8 +53,6 @@ requests = {}
 
 RATE_LIMIT = 5 # requests
 RATE_TIME = 10 # seconds
-
-@app.middleware("http")
 
 @app.middleware("http")
 async def rate_limit(request: Request, call_next):
@@ -105,7 +103,6 @@ def root():
 @app.post("/generate-sql", response_model=SQLResponseModel)
 def generate_and_execute_sql(request: Text2SQLRequest):
     try:
-        print(request.question)
         prompt = build_prompt(request.question)
         # Generate SQL using Gemini
         raw_sql = generate_sql_query(prompt)
