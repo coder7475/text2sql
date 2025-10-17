@@ -3,7 +3,7 @@ import os
 import time
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from google import genai
 from dotenv import load_dotenv
 
@@ -27,7 +27,9 @@ class SQLResponseModel(BaseModel):
     result_json: str
 
 class Text2SQLRequest(BaseModel):
-    question: str
+    question: str = Field(
+        default="Show all orders shipped in 1997"
+    )
 
 
 app = FastAPI(
@@ -102,6 +104,7 @@ def root():
 
 @app.post("/generate-sql", response_model=SQLResponseModel)
 def generate_and_execute_sql(request: Text2SQLRequest):
+    """Generate, validate, and execute SQL query from English question."""
     try:
         prompt = build_prompt(request.question)
         # Generate SQL using Gemini
