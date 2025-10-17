@@ -1,17 +1,19 @@
+import sys
+import os
 import time
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from google import genai
+from dotenv import load_dotenv
 
-from src.utils import build_prompt
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-app = FastAPI(
-    title="Text2SQL API (Gemini + Northwind)",
-    version="1.0.0",
-    description="Convert natural language questions to SQL queries and execute them safely."
-)
+from src.query_validator import QueryValidator
+from src.text2sql_engine import generate_sql_query, sanitize_sql
+from src.utils import build_prompt, df_to_json, execute_query_on_db
 
+load_dotenv()
 
 
 client = genai.Client()
@@ -27,11 +29,17 @@ class SQLResponseModel(BaseModel):
 class Text2SQLRequest(BaseModel):
     question: str
 
+
+app = FastAPI(
+    title="Text2SQL API (Gemini + Northwind)",
+    version="1.0.0",
+    description="Convert natural language questions to SQL queries and execute them safely."
+)
+
 # Middlewares
 # Auth Middleware
 @app.middleware
 async def add_process_time_header(request: Request, call_next):
-
     start_time = time()
     response = await call_next(request)
     process_time = time.time() - start_time
@@ -97,7 +105,27 @@ def root():
 @app.post("/generate-sql", response_model=SQLResponseModel)
 def generate_and_execute_sql(request: Text2SQLRequest):
     try:
+        print(request.question)
         prompt = build_prompt(request.question)
+        # Generate SQL using Gemini
+        raw_sql = generate_sql_query(prompt)
+        sanitized_sql = sanitize_sql(raw_sql)
+
+        if not sanitized_sql:
+            raise HTTPException(status_code=400, detail="Generated SQL is empty after sanitization.")
+
+        # Validate the SQL
+        validated_sql = QueryValidator.validate(sanitized_sql)
+
+        df = execute_query_on_db(validated_sql)
+
+        return SQLResponseModel(
+            sql_query=raw_sql,
+            sanitized_query=sanitized_sql,
+            validate_query=validated_sql,
+            result_json=df_to_json(df)
+        )
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Validation error: {str(e)}")
     except Exception as e:

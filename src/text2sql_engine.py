@@ -1,9 +1,11 @@
 import re
 import os
 import sys
-from dotenv import load_dotenv
 from google import genai
+from dotenv import load_dotenv
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from src.query_validator import QueryValidator
 from src.utils import build_prompt, df_to_json, execute_query_on_db
 
